@@ -128,7 +128,7 @@ Update the filenames inside each cat's `frames` array to match whatever you name
 
 - Plain HTML + CSS + JavaScript — no frameworks, no libraries
 - [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) font from Google Fonts (loaded automatically)
-- Pixel art cat animations hand-drawn by the creator 🐾
+- Pixel art cat animations hand-drawn by the myself 🐾
 
 ---
 
