@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cat Timer &lt;3</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; image-rendering: pixelated; }
+
+  body {
+    background: #358bb3;
+    background-image:
+      linear-gradient(45deg, #69b4d7 25%, transparent 25%),
+      linear-gradient(-45deg, #358bb3 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #618ea2 75%),
+      linear-gradient(-45deg, transparent 75%, #358bb3 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  .window {
+    background: #267fb6;
+    border: 4px solid #92400e;
+    box-shadow: 6px 6px 0 #92400e;
+    width: 360px;
+  }
+
+  .titlebar {
+    background: #11688e;
+    border-bottom: 4px solid #92400e;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .titlebar span { font-size: 8px; color: #acc1e1; }
+  .titlebar-btns { display: flex; gap: 4px; }
+  .titlebar-btn {
+    width: 16px; height: 16px;
+    border: 2px solid #053a56;
+    background: #fef3c7;
+    font-size: 7px; color: #093860;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-family: 'Press Start 2P', monospace;
+  }
+  .titlebar-btn:hover { background: #fde68a; }
+
+  .body { padding: 18px 16px 20px; }
+
+  .app-title {
+    font-size: 7px;
+    color: #d2c642;
+    text-align: center;
+    margin-bottom: 16px;
+    line-height: 1.8;
+  }
+
+  .cat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .cat-card {
+    background: #fff8e1;
+    border: 3px solid #74afea;
+    padding: 10px 8px 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.08s;
+  }
+  .cat-card:hover { background: #fde68a; transform: scale(1.04); }
+  .cat-card:active { transform: scale(0.97); }
+
+  .cat-label { font-size: 6px; color: #83cce4; text-align: center; }
+  .cat-mins  { font-size: 5px; color: #1ea7b4; }
+
+  /* ── Sprite wrap — used on all 4 cats ── */
+  .sprite-wrap {
+    width: 80px;
+    height: 80px;
+    position: relative;
+  }
+  .sprite-wrap .frame {
+    position: absolute;
+    top: 0; left: 0;
+    width: 80px; height: 80px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    opacity: 0;
+    transition: opacity 0.05s;
+  }
+  .sprite-wrap .frame.active { opacity: 1; }
+  .sprite-wrap .frame-ph {
+    position: absolute;
+    top: 0; left: 0;
+    width: 80px; height: 80px;
+    border: 3px dashed #32d5ee;
+    background: #fffbeb;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 5px; color: #f2ddcc; text-align: center; line-height: 1.8;
+  }
+
+  /* Larger version for the timer screen */
+  .sprite-wrap.lg { width: 120px; height: 120px; }
+  .sprite-wrap.lg .frame    { width: 120px; height: 120px; }
+  .sprite-wrap.lg .frame-ph { width: 120px; height: 120px; }
+
+  /* ── Timer screen ── */
+  #timer-screen { display: none; text-align: center; }
+
+  .timer-cat-wrap {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .timer-display {
+    font-size: 28px;
+    color: #1bb56a;
+    letter-spacing: 3px;
+    margin: 6px 0 4px;
+  }
+
+  .timer-label { font-size: 6px; color: #dfd454; margin-bottom: 10px; line-height: 1.8; }
+
+  .progress-bg {
+    background: #fde68a;
+    border: 2px solid #d97706;
+    height: 12px;
+    margin-bottom: 12px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #d97706;
+    transition: width 1s linear;
+    width: 100%;
+  }
+
+  .done-msg {
+    font-size: 7px;
+    color: #78350f;
+    margin-bottom: 10px;
+    display: none;
+    line-height: 1.8;
+  }
+
+  .btn-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+  .pix-btn {
+    background: #fbbf24;
+    border: 3px solid #92400e;
+    color: #78350f;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    padding: 8px 12px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 #92400e;
+  }
+  .pix-btn:hover   { background: #fde68a; }
+  .pix-btn:active  { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #92400e; }
+  .pix-btn.danger  { background: #fca5a5; border-color: #991b1b; color: #7f1d1d; box-shadow: 3px 3px 0 #991b1b; }
+  .pix-btn.danger:hover { background: #fecaca; }
+
+  .back-link {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 6px;
+    color: #42cadf;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .back-link:hover { color: #19b5cd; }
+</style>
+</head>
+<body>
+
+<div class="window">
+  <div class="titlebar">
+    <span>Cat Timer &lt;3</span>
+    <div class="titlebar-btns">
+      <div class="titlebar-btn">-</div>
+      <div class="titlebar-btn">x</div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <div id="select-screen">
+      <p class="app-title">What are you doing today?</p>
+      <div class="cat-grid">
+
+        <!-- Card 1: Sleeping cat -->
+        <div class="cat-card" onclick="startTimer(0)">
+          <div class="sprite-wrap" id="preview-0">
+            <div class="frame-ph">sleeping<br>cat</div>
+            <!-- frames auto-built by JS from cats[0].frames -->
+          </div>
+          <div class="cat-label">Sleeping cat</div>
+          <div class="cat-mins">5 mins</div>
+        </div>
+
+        <!-- Card 2: Eating cat -->
+        <div class="cat-card" onclick="startTimer(1)">
+          <div class="sprite-wrap" id="preview-1">
+            <div class="frame-ph">eating<br>cat</div>
+          </div>
+          <div class="cat-label">Eating cat</div>
+          <div class="cat-mins">10 mins</div>
+        </div>
+
+        <!-- Card 3: Window cat -->
+        <div class="cat-card" onclick="startTimer(2)">
+          <div class="sprite-wrap" id="preview-2">
+            <div class="frame-ph">window<br>cat</div>
+          </div>
+          <div class="cat-label">Window cat</div>
+          <div class="cat-mins">20 mins</div>
+        </div>
+
+        <!-- Card 4: Playing cat -->
+        <div class="cat-card" onclick="startTimer(3)">
+          <div class="sprite-wrap" id="preview-3">
+            <div class="frame-ph">playing<br>cat</div>
+          </div>
+          <div class="cat-label">Playing cat</div>
+          <div class="cat-mins">30 mins</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="timer-screen">
+      <div class="timer-cat-wrap" id="timer-cat-wrap"></div>
+      <div class="timer-display" id="timer-display">05:00</div>
+      <div class="timer-label"  id="timer-label">Sleeping cat — 5 mins</div>
+      <div class="progress-bg">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="done-msg" id="done-msg">✨ Time's up! Good job! ✨</div>
+      <div class="btn-row">
+        <button class="pix-btn"       id="start-pause-btn" onclick="togglePause()">Start</button>
+        <button class="pix-btn danger"                     onclick="resetTimer()">Reset</button>
+      </div>
+      <span class="back-link" onclick="goBack()">← pick another</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  
+
+  const FRAME_MS = 700;   
+
+  const cats = [
+    {
+      label: 'Sleeping cat', minutes: 5,
+      alt: 'sleeping cat',
+      frames: [
+        'pixil-frame-1.png',
+        'pixil-frame-2.png',
+        'pixil-frame-3.png',
+      ]
+    },
+    {
+      label: 'Eating cat', minutes: 10,
+      alt: 'eating cat',
+      frames: [
+        'eating-frame-1.png',
+        'eating-frame-2.png',
+        'eating-frame-3.png',
+      ]
+    },
+    {
+      label: 'Window cat', minutes: 20,
+      alt: 'window cat',
+      frames: [
+        'window-frame-1.png',
+        'window-frame-2.png',
+        'window-frame-3.png',
+      ]
+    },
+    {
+      label: 'Playing cat', minutes: 30,
+      alt: 'playing cat',
+      frames: [
+        'playing-frame-1.png',
+        'playing-frame-2.png',
+        'playing-frame-3.png',
+      ]
+    },
+  ];
+
+
+  const spriteState = {};   
+  let activeTimerSprite = null;
+
+  function buildSprite(wrapEl, frames, alt) {
+
+    frames.forEach((src, i) => {
+      const img = document.createElement('img');
+      img.className = 'frame';
+      img.src = src;
+      img.alt = alt + ' frame ' + (i + 1);
+      img.onload = () => {
+        const ph = wrapEl.querySelector('.frame-ph');
+        if (ph) ph.style.display = 'none';
+      };
+      wrapEl.appendChild(img);
+    });
+  }
+
+  function startSprite(wrapEl) {
+    const id = wrapEl.id;
+    stopSprite(id);
+    const frames = wrapEl.querySelectorAll('img.frame');
+    if (!frames.length) return;
+    let idx = 0;
+    frames[idx].classList.add('active');
+    spriteState[id] = setInterval(() => {
+      frames[idx].classList.remove('active');
+      idx = (idx + 1) % frames.length;
+      frames[idx].classList.add('active');
+    }, FRAME_MS);
+  }
+
+  function stopSprite(id) {
+    if (spriteState[id]) {
+      clearInterval(spriteState[id]);
+      delete spriteState[id];
+    }
+  }
+
+  function stopAllSprites() {
+    Object.keys(spriteState).forEach(stopSprite);
+  }
+
+
+  window.addEventListener('DOMContentLoaded', () => {
+    cats.forEach((cat, i) => {
+      const wrap = document.getElementById('preview-' + i);
+      if (wrap) {
+        buildSprite(wrap, cat.frames, cat.alt);
+        startSprite(wrap);
+      }
+    });
+  });
+
+
+  let totalSecs = 0, remaining = 0, running = false, timerInterval = null, currentIdx = 0;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function fmt(s) { return pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
+
+  function buildTimerCat(cat) {
+    const wrap = document.getElementById('timer-cat-wrap');
+    wrap.innerHTML = '';
+
+    const spriteEl = document.createElement('div');
+    spriteEl.className = 'sprite-wrap lg';
+    spriteEl.id = 'timer-sprite';
+
+    const ph = document.createElement('div');
+    ph.className = 'frame-ph';
+    ph.textContent = cat.alt;
+    spriteEl.appendChild(ph);
+
+    wrap.appendChild(spriteEl);
+    buildSprite(spriteEl, cat.frames, cat.alt);
+    startSprite(spriteEl);
+    activeTimerSprite = 'timer-sprite';
+  }
+
+  function startTimer(idx) {
+    currentIdx = idx;
+    const cat = cats[idx];
+    totalSecs = cat.minutes * 60;
+    remaining = totalSecs;
+    running = false;
+    clearInterval(timerInterval);
+
+    document.getElementById('select-screen').style.display = 'none';
+    document.getElementById('timer-screen').style.display  = 'block';
+    document.getElementById('timer-display').textContent   = fmt(remaining);
+    document.getElementById('timer-label').textContent     = cat.label + ' — ' + cat.minutes + ' mins';
+    document.getElementById('start-pause-btn').textContent = 'Start';
+    document.getElementById('done-msg').style.display      = 'none';
+    document.getElementById('progress-fill').style.width   = '100%';
+
+    buildTimerCat(cat);
+  }
+
+  function togglePause() {
+    if (remaining === 0) return;
+    if (running) {
+      clearInterval(timerInterval);
+      running = false;
+      document.getElementById('start-pause-btn').textContent = 'Resume';
+    } else {
+      running = true;
+      document.getElementById('start-pause-btn').textContent = 'Pause';
+      timerInterval = setInterval(() => {
+        remaining--;
+        document.getElementById('timer-display').textContent = fmt(remaining);
+        document.getElementById('progress-fill').style.width =
+          Math.round((remaining / totalSecs) * 100) + '%';
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          running = false;
+          document.getElementById('start-pause-btn').textContent = 'Done!';
+          document.getElementById('done-msg').style.display = 'block';
+        }
+      }, 1000);
+    }
+  }
+
+  function resetTimer() {
+    clearInterval(timerInterval);
+    running = false;
+    remaining = totalSecs;
+    document.getElementById('timer-display').textContent   = fmt(remaining);
+    document.getElementById('start-pause-btn').textContent = 'Start';
+    document.getElementById('done-msg').style.display      = 'none';
+    document.getElementById('progress-fill').style.width   = '100%';
+  }
+
+  function goBack() {
+    clearInterval(timerInterval);
+    if (activeTimerSprite) stopSprite(activeTimerSprite);
+    running = false;
+    document.getElementById('timer-screen').style.display  = 'none';
+    document.getElementById('select-screen').style.display = 'block';
+    /* restart card previews */
+    cats.forEach((_, i) => {
+      const wrap = document.getElementById('preview-' + i);
+      if (wrap) startSprite(wrap);
+    });
+  }
+</script>
+</body>
+</html>
